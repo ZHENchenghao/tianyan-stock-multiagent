@@ -1458,7 +1458,15 @@ def judge_holdings(layer1, layer2, layer3):
         name = h.get('name', '')
         amount = h.get('amount', 0)
         cost = h.get('cost_basis', amount)
-        pnl_old = h.get('pnl_pct', 0) / 100.0  # 这是T+1净值
+        # 防脏数据(2026-07-17): portfolio.json手填占位符(如amount="待确认")曾直接TypeError炸掉全局裁决。
+        # 一条脏持仓只跳过自己并警告, 不准拖死整个系统。
+        try:
+            amount = float(amount)
+            cost = float(cost)
+            pnl_old = float(h.get('pnl_pct', 0)) / 100.0  # 这是T+1净值
+        except (TypeError, ValueError):
+            print(f'[WARN] 持仓"{h.get("name", "?")}"字段非数值(amount={h.get("amount")!r}), 本期跳过该持仓, 请修portfolio.json')
+            continue
         sector = h.get('sector', '')
         role = h.get('role', '')
 
