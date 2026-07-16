@@ -680,7 +680,7 @@ def _llm_judge_news_directions(news_titles):
             '只返回JSON,不要其他文字: {"results":[{"i":序号,"dir":"bullish/bearish/neutral","why":"8字内理由"}]}'
         )
         resp = client.messages.create(
-            model=model, max_tokens=2000, temperature=0.1,
+            model=model, max_tokens=2000, temperature=0,  # temp=0: 同输入必须同结论(读懂层确定性要求)
             messages=[{"role": "user", "content": prompt}]
         )
         text = ''.join(getattr(b, 'text', '') for b in resp.content
@@ -725,7 +725,8 @@ def layer3_sector_catalysts(layer1, layer2):
         ORDER BY publish_date DESC LIMIT 20
     """).fetchall()
 
-    conn.close()
+    # 注意: conn不在此处关闭——下方"改2"的ε≈0复核还要查etf_daily。
+    # 修复(2026-07-17): 此前在这里提前close导致ETF折溢价复核自上线起一直抛异常被吞, etf_disc恒=0。
 
     # --- 安检过滤 ---
     veto = layer1.get('veto_list', [])
@@ -812,6 +813,8 @@ def layer3_sector_catalysts(layer1, layer2):
         'veto_applied': len([s for s in sector_signals if s.get('blocked')]),
         'pass_count': len([s for s in sector_signals if not s.get('blocked')]),
         'name_reality_conflicts': name_reality_conflicts,
+        # 读懂层降级可见化(2026-07-17): LLM不可用时静默退回关键词是审计查出的病, 降级必须喊出来
+        'reader_mode': 'llm' if llm_dirs else 'keyword-fallback',
         'epsilon_audit': {
             'etf_disc': round(float(etf_disc), 2) if 'etf_disc' in dir() else None,
             'put_iv': _put_iv if '_put_iv' in dir() else None,
@@ -1617,6 +1620,31 @@ def generate_unified_report(external_up_ratio=None, external_news=None):
     fragility = layer2b_fragility()
     attack_signals = layer3b_attack_signals(layer1)
 
+    # Step 3c: 盘面归因 — LLM解释引擎 (context_reader v1.0, 2026-07-17)
+    # LLM=解释引擎非预测引擎: 解释为什么波动/洗盘还是砸盘。不可用/未过验收→不污染裁决层。
+    context_reading = None
+    try:
+        from engine.context_reader import read_market_context
+        _idx = layer2.get('idx_data', {})
+        _hs300 = _idx.get('沪深300') or _idx.get('上证指数') or {}
+        _va = layer2.get('vol_analysis', {})
+        _payload = {
+            '标的': '大盘(沪深300)', 'analysis_date': today_str,
+            '量价': {'今日涨跌%': _hs300.get('chg', 0),
+                    '成交额亿': _va.get('today_amt_yi', 0),
+                    '成交额5日均亿': _va.get('avg_5d_amt_yi', 0),
+                    '量能判定': _va.get('vol_trend', '?'),
+                    '上涨家数占比%': round((layer2.get('up_ratio') or 0) * 100, 1),
+                    'kline_date': str(freshness.get('kline', {}).get('date', today_str))},
+            '资金流': {'北向净亿': layer1.get('north', 0),
+                      'moneyflow_date': str(freshness.get('macro', {}).get('date', today_str))},
+            '消息': [{'标题': s.get('title', ''), '日期': today_str}
+                    for s in layer3.get('sector_signals', [])[:8]],
+        }
+        context_reading = read_market_context(_payload, analysis_date=today_str)
+    except Exception:
+        context_reading = None
+
     # Step 4: 冲突消解
     conflicts = resolve_conflicts(layer1, layer2, layer3)
 
@@ -1670,6 +1698,7 @@ def generate_unified_report(external_up_ratio=None, external_news=None):
         'layer1': layer1,
         'layer2': layer2,
         'layer3': layer3,
+        'context_reading': context_reading,
         'fragility': fragility,
         'attack_signals': attack_signals,
         'conflicts': conflicts,
@@ -1702,6 +1731,8 @@ def format_report(report_data):
     lines.append(f'> 数据底座: K线{report_data["data_freshness"].get("kline",{}).get("date","?")} | 宏观{report_data["data_freshness"].get("macro",{}).get("date","?")}')
     if stale:
         lines.append(f'> ⚠ 数据过期警告: {stale} → 已降级查询补充')
+    if l3.get('reader_mode') == 'keyword-fallback':
+        lines.append('> ⚠ 读懂层降级: LLM语义判向不可用, 本期新闻方向为关键词粗判(会把"上涨25%后重挫"误判利好), 第三层催化置信度打五折')
     lines.append('')
 
     # ====== 一、绝对主导体制 ======
@@ -1807,6 +1838,40 @@ def format_report(report_data):
     if veto:
         lines.append(f'**第一层否决清单**: {", ".join(veto)} → 今日禁止买入')
         lines.append('')
+
+    # 盘面归因 (LLM解释引擎 v1.0, 2026-07-17): 解释为什么波动, 洗盘还是砸盘, 只输出概率+纠错线
+    cr = report_data.get('context_reading')
+    lines.append('### 盘面归因（LLM解释引擎）')
+    lines.append('')
+    if cr and cr.get('_meta', {}).get('ok'):
+        v = cr.get('verdict', {})
+        try: _conf = f'{float(v.get("置信度", 0)):.0%}'
+        except Exception: _conf = '?'
+        lines.append(f'**最可能解释**: {v.get("最可能解释", "?")}（置信度{_conf}）')
+        lines.append(f'**一句话归因**: {v.get("一句话归因", "")}')
+        hyps = cr.get('hypotheses', [])
+        if hyps:
+            lines.append('')
+            lines.append('| 候选解释 | 后验概率 | 关键支持证据 | 关键反驳证据 |')
+            lines.append('|---|---|---|---|')
+            for h in hyps[:4]:
+                sup = (h.get('支持证据') or ['—'])[0]
+                ref = (h.get('反驳证据') or ['—'])[0]
+                try: _p = f'{float(h.get("后验概率", 0)):.0%}'
+                except Exception: _p = '?'
+                lines.append(f'| {h.get("解释", "?")} | {_p} | {str(sup)[:45]} | {str(ref)[:45]} |')
+            lines.append('')
+        lines.append(f'**纠错线**: {v.get("纠错线", "")}')
+        gaps = v.get('数据缺口') or []
+        if gaps:
+            lines.append(f'**数据缺口**: {"; ".join(str(g) for g in gaps[:3])}')
+    elif cr and cr.get('_meta', {}).get('stage') == 'freshness_gate':
+        lines.append(f'⚠ 解释引擎拒绝分析: 数据过期 — {"; ".join(cr["_meta"].get("stale", [])[:3])}（先补数再归因, 过期数据不解读）')
+    elif cr:
+        lines.append(f'⚠ 解释引擎输出未过验收（{"; ".join(cr.get("_meta", {}).get("reasons", [])[:2])}）, 本期不提供归因——宁缺毋滥')
+    else:
+        lines.append('⚠ 解释引擎不可用（LLM未配置）, 本期无盘面归因')
+    lines.append('')
 
     # 热门板块全景 (v7新增: 所有指数涨跌排名)
     lines.append('### 今日热门板块全景')
