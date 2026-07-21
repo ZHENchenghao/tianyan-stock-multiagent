@@ -1,6 +1,20 @@
-# 天眼 TianYan — 股市多维度判断多Agent系统
+# 天眼 · TianYan
 
-> A multi-agent, multi-dimensional verdict system for China A-shares — 8-dimension cross-validation, Bayesian cognitive circuit breaker, and falsifiable decision output.
+### 股市多维度判断 · 多 Agent 系统
+
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python)](https://www.python.org/)
+[![Lines](https://img.shields.io/badge/代码-30%2C000%2B行-0f172a)](.)
+[![Engine](https://img.shields.io/badge/引擎模块-71个-7c3aed)](./engine/)
+[![License](https://img.shields.io/badge/License-MIT-22c55e)](./LICENSE)
+[![Status](https://img.shields.io/badge/状态-生产运行中-3b82f6)](.)
+
+---
+
+> **核心命题** — 把 AI 对股市的分析改造成可审计的工程过程
+>
+> 8 维独立盲评 · 15 子模型投票 · 18 维预测 · ACH 多假设推理 · LLM 情境归因 · 贝叶斯熔断 · 三方盲测
+
+---
 
 ## 设计理念
 
@@ -40,6 +54,13 @@ flowchart LR
 ## 系统是什么
 
 天眼不是"AI荐股工具"。它是一个**多Agent协同裁决系统**：让8个独立分析维度（宏观/大盘/景气/资金流/压力测试/反共识/盈亏/规则健康）+ 15个投资大师子模型各自独立打分，再由统一裁决引擎用连续化概率流合成结论——**每个结论必须附带可证伪的纠错线**，说不出"什么情况下我错了"的建议没有资格输出。
+
+---
+
+| `22,000+` 行 Python | `71` 引擎模块 | `8` 裁决维度 | `17` 独立子模型 | `18` 预测通道 | `6` 层 ACH 推理 | `3` 方盲测基线 |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+
+---
 
 ## 架构总览
 
