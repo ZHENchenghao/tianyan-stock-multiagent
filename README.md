@@ -54,63 +54,28 @@ graph LR
 > 这套系统的目标**不是预测市场**。它是防蠢系统：两道裁决串行（8 维定方向 → 三国杀定仓位），任何单一系统的错误不会绑架全局。保险丝不发电，但它防止火灾。
 
 ```mermaid
-graph TB
-    D0["数据底座: DuckDB K线 + 分钟线 + 北向 + 融资 + 新闻 + 龙虎榜"]
+graph LR
+    D1[宏观 25%] --> E
+    D2[量能 35%] --> E
+    D3[催化 30%] --> E
+    D4[17 大师] --> E
 
-    D1["WTI · 美10Y · CNH<br/>宏观体制 25%"]
-    D2["O'Neil · 资金指纹 · Regime<br/>量能结构 35%"]
-    D3["景气度 · 蒂尔滤网 · 反共识<br/>催化层 30%"]
-    D4["17 大师模型<br/>独立投票"]
+    E[8 维合成] --> G
 
-    V1["ACH 盲测 98%<br/>盲测库统计"]
-    V2["14 条规则 70%<br/>拥挤反转 · 恐慌底 · 周几效应"]
-    V3["LLM 日报 60%<br/>纯翻译 · 参考票"]
+    V1[ACH 盲测 98%] --> G
+    V2[14 条规则 70%] --> G
+    V3[LLM 日报 60%] --> G
 
-    D1 --> E
-    D2 --> E
-    D3 --> E
-    D4 --> E
-    D0 --> D1
-    D0 --> V1
-    D0 --> V2
+    G{三国杀投票}
+    G --三空--> L[清仓]
+    G --分歧--> M[半仓]
+    G --三多--> H[重仓]
+    G --熔断--> F[仓位压至 20%]
 
-    E{"8 维合成 → 方向"}
-
-    E --> V1
-    E --> V2
-    E --> V3
-
-    V1 --> GATE
-    V2 --> GATE
-    V3 --> GATE
-
-    GATE{"三国杀投票"}
-
-    GATE -->|三空| L["清仓 / 轻仓"]
-    GATE -->|分歧| M["半仓 + 主线"]
-    GATE -->|三多| H["重仓"]
-    GATE -->|熔断| F["仓位压至 20%"]
-
-    L --> OUT["裁决输出<br/>方向 + 点位 + 概率 + 纠错线"]
+    L --> OUT[方向 · 点位 · 概率 · 纠错线]
     M --> OUT
     H --> OUT
     F --> OUT
-
-    style D0 fill:#1e293b,stroke:#64748b,color:#94a3b8
-    style D1 fill:#1e3a5f,stroke:#3b82f6,color:#bfdbfe
-    style D2 fill:#1e3a5f,stroke:#3b82f6,color:#bfdbfe
-    style D3 fill:#1e3a5f,stroke:#3b82f6,color:#bfdbfe
-    style D4 fill:#2e1065,stroke:#7c3aed,color:#c4b5fd
-    style E fill:#0f172a,stroke:#3b82f6,color:#93c5fd
-    style V1 fill:#1e3a5f,stroke:#22d3ee,color:#67e8f9
-    style V2 fill:#1e3a5f,stroke:#22d3ee,color:#67e8f9
-    style V3 fill:#2e1065,stroke:#c4b5fd,color:#d8b4fe
-    style GATE fill:#1e1b4b,stroke:#a855f7,color:#c4b5fd
-    style L fill:#052e16,stroke:#16a34a,color:#86efac
-    style M fill:#451a03,stroke:#f59e0b,color:#fcd34d
-    style H fill:#450a0a,stroke:#dc2626,color:#fca5a5
-    style F fill:#4c0519,stroke:#e11d48,color:#fda4af
-    style OUT fill:#0f172a,stroke:#22d3ee,color:#67e8f9
 ```
 
 ## 系统架构全景
