@@ -55,27 +55,38 @@ graph LR
 
 ```mermaid
 graph LR
-    D1[宏观 25%] --> E
-    D2[量能 35%] --> E
-    D3[催化 30%] --> E
-    D4[17 大师] --> E
+    D1[宏观 25%]:::dim --> E
+    D2[量能 35%]:::dim --> E
+    D3[催化 30%]:::dim --> E
+    D4[17 大师]:::dim --> E
 
-    E[8 维合成] --> G
+    E[8 维合成]:::engine --> G
 
-    V1[ACH 盲测 98%] --> G
-    V2[14 条规则 70%] --> G
-    V3[LLM 日报 60%] --> G
+    V1[ACH 盲测 98%]:::vote --> G
+    V2[14 条规则 70%]:::vote --> G
+    V3[LLM 日报 60%]:::llm --> G
 
-    G{三国杀投票}
-    G --三空--> L[清仓]
-    G --分歧--> M[半仓]
-    G --三多--> H[重仓]
-    G --熔断--> F[仓位压至 20%]
+    G{三国杀投票}:::gate
+    G --三空--> L[清仓]:::safe
+    G --分歧--> M[半仓]:::mid
+    G --三多--> H[重仓]:::risk
+    G --熔断--> F[仓位压至 20%]:::fuse
 
-    L --> OUT[方向 · 点位 · 概率 · 纠错线]
+    L --> OUT[方向 · 点位 · 概率 · 纠错线]:::out
     M --> OUT
     H --> OUT
     F --> OUT
+
+    classDef dim fill:#0f172a,stroke:#3b82f6,color:#bfdbfe,stroke-width:2px
+    classDef engine fill:#1e1b4b,stroke:#6366f1,color:#c7d2fe,stroke-width:3px
+    classDef vote fill:#0f172a,stroke:#22d3ee,color:#67e8f9,stroke-width:2px
+    classDef llm fill:#2e1065,stroke:#a855f7,color:#d8b4fe,stroke-width:1px
+    classDef gate fill:#1e1b4b,stroke:#a855f7,color:#e0e7ff,stroke-width:2px
+    classDef safe fill:#052e16,stroke:#16a34a,color:#86efac,stroke-width:2px
+    classDef mid fill:#451a03,stroke:#f59e0b,color:#fcd34d,stroke-width:2px
+    classDef risk fill:#450a0a,stroke:#dc2626,color:#fca5a5,stroke-width:2px
+    classDef fuse fill:#4c0519,stroke:#e11d48,color:#fda4af,stroke-width:2px
+    classDef out fill:#0f172a,stroke:#f1f5f9,color:#e2e8f0,stroke-width:3px
 ```
 
 ## 系统架构全景
