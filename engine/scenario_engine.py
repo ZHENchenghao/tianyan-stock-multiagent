@@ -810,4 +810,100 @@ if __name__ == '__main__':
         }
         print(json.dumps(result, indent=2, ensure_ascii=False, default=str))
     else:
-        print("用法: scenario_engine.py [plan|trace|stress|bayes|percentile|quadrant|gap|json]")
+        print("用法: scenario_engine.py [plan|trace|stress|bayes|percentile|quadrant|gap|json|vpin|crowding]")
+
+
+# ═══════════════════════════════════════════
+# v1.1 增强 (2026-07-17): VPIN闸门 + 机构拥挤
+# 从AgentQuant集成 — 多情景概率的前置过滤器
+# ═══════════════════════════════════════════
+
+def vpin_gate():
+    """
+    VPIN闸门 — 知情交易概率过滤。
+    高VPIN→知情交易活跃→市场方向被少数参与者主导→情景推演需降权。
+    返回: {vpin_est, gate, note}
+    """
+    con = duckdb.connect(DB, read_only=True)
+    today = con.execute("SELECT MAX(trade_date) FROM kline_daily").fetchone()[0]
+    rows = con.execute("""
+        SELECT AVG(ABS(pct_chg)/NULLIF(turnover_rate,0)) FROM kline_daily
+        WHERE trade_date=? AND turnover_rate>0
+    """, [str(today)]).fetchone()
+    con.close()
+
+    vpin = float(rows[0]) if rows and rows[0] else 0
+    if vpin > 5:
+        gate = 'RED'
+        note = f'VPIN={vpin:.1f}(>5→高度知情交易)→多情景概率置信度打五折, 情景推演标注"高不确定性"'
+    elif vpin > 2:
+        gate = 'YELLOW'
+        note = f'VPIN={vpin:.1f}(2-5→知情交易偏高)→情景推演标注"注意信息不对称"'
+    else:
+        gate = 'GREEN'
+        note = f'VPIN={vpin:.1f}(<2→噪音交易为主)→情景推演正常权重'
+
+    return {'date': str(today), 'vpin_estimate': round(vpin, 2), 'gate': gate, 'note': note}
+
+
+def institutional_crowding():
+    """
+    机构拥挤度 — 前50大市值集中度 + 北向/融资同步性。
+    同向操作N周以上→拥挤瓦解风险上升→熊市场景概率加权。
+    """
+    con = duckdb.connect(DB, read_only=True)
+    today = con.execute("SELECT MAX(trade_date) FROM kline_daily").fetchone()[0]
+    today = str(today)
+
+    # 市值集中度
+    try:
+        top50 = con.execute("""
+            SELECT SUM(total_mv) FROM (SELECT total_mv FROM kline_daily
+            WHERE trade_date=? ORDER BY total_mv DESC LIMIT 50)
+        """, [today]).fetchone()
+        total = con.execute("SELECT SUM(total_mv) FROM kline_daily WHERE trade_date=?", [today]).fetchone()
+        conc = float(top50[0]) / float(total[0]) if top50 and total and top50[0] and total[0] else 0
+    except:
+        conc = 0
+
+    # 北向/融资同步周数
+    try:
+        nb = con.execute("""
+            SELECT trade_date, net_flow FROM lab_northbound_daily
+            WHERE trade_date <= ? AND net_flow IS NOT NULL ORDER BY trade_date DESC LIMIT 20
+        """, [today]).fetchall()
+        mg = con.execute("""
+            SELECT trade_date, margin_balance FROM margin_trading
+            WHERE trade_date <= ? ORDER BY trade_date DESC LIMIT 20
+        """, [today]).fetchall()
+        nb_dates = {str(r[0]): float(r[1]) for r in nb}
+        mg_dates = {str(r[0]): float(r[1]) for r in mg}
+
+        sync_weeks = 0
+        for i in range(min(len(nb), len(mg))):
+            nb_v = float(nb[i][1]) if i < len(nb) else 0
+            mg_v = float(mg[i][1]) if i < len(mg) else 0
+            mg_prev = float(mg[i+1][1]) if i+1 < len(mg) and mg[i+1][1] else mg_v
+            nb_dir = 1 if nb_v > 0 else -1
+            mg_dir = 1 if mg_v > mg_prev else -1
+            if nb_dir == mg_dir:
+                sync_weeks += 1
+            else:
+                break
+    except:
+        sync_weeks = 0
+
+    con.close()
+
+    crowding_level = 'LOW'
+    if conc > 0.45 and sync_weeks >= 3:
+        crowding_level = 'HIGH'
+        note = f'前50占{conc:.0%}+北向融资同步{sync_weeks}天→高拥挤警惕瓦解; 熊市/震荡场景概率+15%'
+    elif conc > 0.40:
+        crowding_level = 'MEDIUM'
+        note = f'前50占{conc:.0%}(偏高)→中性场景降权, 尾部风险升'
+    else:
+        note = f'集中度{conc:.0%}(正常)+同步{sync_weeks}天→无拥挤警报'
+
+    return {'date': today, 'top50_concentration': round(conc, 2), 'nb_margin_sync_days': sync_weeks,
+            'crowding_level': crowding_level, 'note': note}
