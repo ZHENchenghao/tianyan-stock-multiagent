@@ -62,32 +62,54 @@ flowchart LR
 
 ---
 
-## 架构总览
+## 架构总览 — 以风控为核心的裁决管道
+
+> 这套系统的目标**不是预测市场**。它是防蠢系统：两道裁决串行（8 维定方向 → 三国杀定仓位），任何单一系统的错误不会绑架全局。保险丝不发电，但它防止火灾。
 
 ```mermaid
-graph LR
-    A["第一层<br/>宏观体制 · 25%<br/>WTI 美10Y CNH 北向"] --> E
-    B["第二层<br/>量能结构 · 35%<br/>O'Neil 资金指纹 Regime"] --> E
-    C["第三层<br/>催化反共识 · 30%<br/>景气度 蒂尔滤网 剪刀差"] --> E
-    D["独立投票层<br/>17 大师子模型 · 权重均等<br/>Livermore · O'Neil · Minervini · Wyckoff ..."] --> E
+graph TB
+    subgraph INPUT["数据输入 — 行情 / 资金流 / 新闻"]
+        D0["数据新鲜度门禁 — 过期数据直接拒"]
+    end
 
-    E{"统一裁决引擎<br/>z-score → Φ加权 → 后验概率<br/>+ 迟滞环防抖"}
+    subgraph L1["第一道 · 8 维独立盲评 — 定方向"]
+        direction LR
+        D1["宏观 25%"] --- D2["量能 35%"] --- D3["催化 30%"] --- D4["17 大师 权重均等"]
+    end
 
-    E --> F{"认知熔断<br/>连续错误 ?"}
-    F -->|正常| G["裁决输出<br/>方向 + 点位 + 概率 + 纠错线"]
-    F -->|熔断| H["仓位上限压至 20%<br/>自我怀疑自动降权"]
-    G --> I["五层验证塔<br/>L0→L1→L2→L3→L4"]
-    I -.反馈校准.-> E
+    subgraph L2["第二道 · 三国杀交叉验证 — 定仓位"]
+        direction LR
+        V1["ACH 盲测 98%<br/>纯统计"] --- V2["14 条规则 70%<br/>纯规则"] --- V3["LLM 日报 60%<br/>参考票"]
+    end
 
-    style A fill:#450a0a,stroke:#dc2626,color:#fca5a5
-    style B fill:#451a03,stroke:#f59e0b,color:#fcd34d
-    style C fill:#052e16,stroke:#16a34a,color:#86efac
-    style D fill:#2e1065,stroke:#7c3aed,color:#c4b5fd
-    style E fill:#0f172a,stroke:#3b82f6,color:#93c5fd
-    style F fill:#1e1b4b,stroke:#a855f7,color:#c4b5fd
-    style G fill:#0f172a,stroke:#22d3ee,color:#67e8f9
-    style H fill:#4c0519,stroke:#e11d48,color:#fda4af
-    style I fill:#1e293b,stroke:#94a3b8,color:#cbd5e1
+    INPUT --> L1 --> L2
+
+    L2 -->|"三空 → 清仓"| OUT_LIGHT["轻仓 / 空仓<br/>高置信度"]
+    L2 -->|"分歧 → 半仓"| OUT_HALF["半仓 + 主线<br/>降仓等信号"]
+    L2 -->|"三多 → 重仓"| OUT_HEAVY["重仓<br/>高置信度"]
+    L2 -->|"熔断触发"| FUSE["仓位压至 20%<br/>自我怀疑自动降权"]
+
+    OUT_LIGHT --> FINAL["输出 — 方向 + 点位 + 概率 + 纠错线"]
+    OUT_HALF --> FINAL
+    OUT_HEAVY --> FINAL
+    FUSE --> FINAL
+
+    style INPUT fill:#1e293b,stroke:#64748b,color:#cbd5e1
+    style L1 fill:#0f172a,stroke:#3b82f6,color:#93c5fd
+    style L2 fill:#1e1b4b,stroke:#7c3aed,color:#c4b5fd
+    style OUT_LIGHT fill:#052e16,stroke:#16a34a,color:#86efac
+    style OUT_HALF fill:#451a03,stroke:#f59e0b,color:#fcd34d
+    style OUT_HEAVY fill:#450a0a,stroke:#dc2626,color:#fca5a5
+    style FUSE fill:#4c0519,stroke:#e11d48,color:#fda4af
+    style FINAL fill:#0f172a,stroke:#22d3ee,color:#67e8f9
+    style D0 fill:#334155,stroke:#94a3b8,color:#e2e8f0
+    style D1 fill:#1e3a5f,stroke:#3b82f6,color:#bfdbfe
+    style D2 fill:#1e3a5f,stroke:#3b82f6,color:#bfdbfe
+    style D3 fill:#1e3a5f,stroke:#3b82f6,color:#bfdbfe
+    style D4 fill:#2e1065,stroke:#7c3aed,color:#c4b5fd
+    style V1 fill:#1e3a5f,stroke:#93c5fd,color:#bfdbfe
+    style V2 fill:#1e3a5f,stroke:#93c5fd,color:#bfdbfe
+    style V3 fill:#2e1065,stroke:#c4b5fd,color:#e9d5ff
 ```
 
 ## 系统架构全景
