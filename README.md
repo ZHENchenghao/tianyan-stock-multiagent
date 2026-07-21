@@ -6,23 +6,36 @@
 
 核心理念是一条**信息精炼管道**：让AI把海量原始信息变成可信的判断依据，再让多维裁决把判断变成可追责的建议。
 
-```
-原始信息（行情 / 资金流 / 新闻 / 公告）
-   │
-   ▼ ① 数据整理与真伪过滤（入口把关）
-   │    新闻消息在进入推理层之前，先做信源追踪、可信度标注与真假过滤——
-   │    垃圾信息和假消息不允许污染下游判断
-   ▼ ② LLM情境化阅读与归因推理（解释层）
-   │    LLM在本系统中的角色是「解释引擎」而非「预测引擎」：辅助情境理解，
-   │    把多维信息（量价/资金流/消息/席位）集合起来推理拼凑出市场的真实走向——
-   │    解释为什么波动、这根放量阴线是主力洗盘还是出货砸盘（形态相同、含义相反，
-   │    只有结合资金流指纹与消息情境才能分辨）。同一条消息在恐慌盘和亢奋盘中
-   │    含义完全不同，必须情境判读，而非关键词匹配或固定阈值规则。
-   │    先解释清楚「正在发生什么」，裁决层才有资格决定「接下来做什么」
-   ▼ ③ 多维度独立打分（裁决层）
-   │    8个分析维度 + 15个策略子模型各自独立评分、互不通气，由统一引擎合成
-   ▼ ④ 输出建议（可追责）
-        方向 + 点位 + 概率分布 + 纠错线（失效条件）
+```mermaid
+flowchart LR
+    subgraph INPUT["📥 原始信息"]
+        A[行情 · 资金流 · 新闻 · 公告]
+    end
+    subgraph GATE["① 🔍 数据真伪过滤<br/>入口把关"]
+        B["信源追踪<br/>可信度标注<br/>旧闻重炒识别<br/>垃圾消息拦截"]
+    end
+    subgraph LLM["② 🧠 LLM情境阅读<br/>解释引擎（非预测引擎）"]
+        C["多维信息拼凑市场真实走向<br/>放量阴线→洗盘？出货砸盘？<br/>同一消息,恐慌盘与亢奋盘含义相反<br/>解释「正在发生什么」"]
+    end
+    subgraph JUDGE["③ ⚖️ 多维度独立打分<br/>裁决层"]
+        D["8维矩阵<br/>+<br/>15个大师子模型<br/>互不通气,隔离盲评"]
+    end
+    subgraph OUT["④ 📋 可追责输出"]
+        E["方向 · 点位 · 概率分布<br/>+<br/>纠错线（失效条件）"]
+    end
+
+    A --> B --> C --> D --> E
+
+    style INPUT fill:#e8f0fe,stroke:#2563eb,stroke-width:2px
+    style GATE fill:#fff7ed,stroke:#ea580c,stroke-width:2px
+    style LLM fill:#f0fdf4,stroke:#16a34a,stroke-width:2px
+    style JUDGE fill:#faf5ff,stroke:#9333ea,stroke-width:2px
+    style OUT fill:#eff6ff,stroke:#1d4ed8,stroke-width:2px
+    style A fill:#dbeafe,stroke:#3b82f6
+    style B fill:#ffedd5,stroke:#f97316
+    style C fill:#dcfce7,stroke:#22c55e
+    style D fill:#f3e8ff,stroke:#a855f7
+    style E fill:#bfdbfe,stroke:#2563eb
 ```
 
 ## 为什么这样设计
@@ -42,28 +55,57 @@
 ## 架构总览
 
 ```mermaid
-flowchart TB
-    subgraph L1["第一统治层 · 宏观体制与流动性闸门"]
-        M[宏观体制引擎<br/>WTI双维框架/美10Y/CNH]
+graph TB
+    subgraph TIER1["🏛 第一统治层 · 宏观体制与流动性 （权重25%）"]
+        direction LR
+        M1["WTI 双维框架"] --- M2["美10Y 利率"]
+        M2 --- M3["CNH 汇率"]
+        M3 --- M4["北向资金"]
     end
-    subgraph L2["第二传导层 · 市场量能与筹码结构"]
-        MK[大盘状态<br/>O'Neil体系] --- CF[资金流五维指纹] --- RG[Market Regime四象限]
+
+    subgraph TIER2["📊 第二传导层 · 量能与结构 （权重20%+15%）"]
+        direction LR
+        T2A["大盘状态<br/>O'Neil体系"]
+        T2B["资金流五维指纹"]
+        T2C["Market Regime<br/>四象限"]
     end
-    subgraph L3["第三执行层 · 行业催化与选股素材"]
-        P[景气度四层引擎] --- AC[反共识剪刀差] --- TF[蒂尔滤网<br/>垄断识别]
+
+    subgraph TIER3["📰 第三执行层 · 催化与反共识 （权重15%+10%+5%）"]
+        direction LR
+        T3A["景气度四层引擎"]
+        T3B["反共识剪刀差<br/>（带RSI门禁）"]
+        T3C["蒂尔滤网<br/>垄断识别"]
     end
-    subgraph SUB["大师子模型独立投票 (15个)"]
-        S1[Livermore] --- S2[O'Neil] --- S3[Minervini] --- S4[Wyckoff] --- S5[Druckenmiller] --- S6[...]
+
+    subgraph MASTERS["🎓 大师策略子模型 ×15 （独立投票权）"]
+        direction LR
+        S["Livermore · O'Neil · Minervini · Wyckoff<br/>Druckenmiller · Loeb · Darvas · 养家<br/>北京炒手 · 退学 · 小鳄鱼 · 徐翔 · 赵老哥"]
     end
-    L1 --> UV
-    L2 --> UV
-    L3 --> UV
-    SUB --> UV
-    UV[统一裁决引擎 UnifiedVerdict<br/>z-score映射 → Φ加权 → 后验概率 P_bull/P_neutral/P_bear<br/>+ 信息熵 + 迟滞环防抖]
-    UV --> FB[贝叶斯认知熔断<br/>连续错误→后验崩塌→自动压仓位上限]
-    FB --> OUT[裁决输出<br/>加/减/观望 + 点位 + 概率分布 + 纠错线]
-    OUT --> VT[五层验证塔 L0-L4<br/>规则审计→回测→矛盾检测→生命周期]
-    VT -.反馈校准.-> UV
+
+    TIER1 --> ENGINE
+    TIER2 --> ENGINE
+    TIER3 --> ENGINE
+    MASTERS --> ENGINE
+
+    ENGINE{{"⚙ 统一裁决引擎<br/>z-score → Φ 加权求和<br/>→ 后验概率向量 P(🐂,😐,🐻)<br/>→ 信息熵 + 迟滞环防抖"}}
+
+    ENGINE --> FUSE{"🔥 贝叶斯认知熔断<br/>连续错误？"}
+    FUSE -->|"正常"| OUTPUT
+    FUSE -->|"熔断"| CAP["仓位上限压至 20% ↓<br/>系统自我怀疑 = 自动降权"]
+
+    OUTPUT["📋 裁决输出<br/>方向 + 点位 + 概率分布<br/>+ 纠错线（失效条件）"]
+    OUTPUT --> TOWER["🗼 五层验证塔<br/>L0规则审计 → L1回测 → L2冲突<br/>→ L3盲区 → L4生命周期"]
+    TOWER -.->|"反馈校准"| ENGINE
+
+    style TIER1 fill:#fef2f2,stroke:#dc2626,stroke-width:2px
+    style TIER2 fill:#fffbeb,stroke:#d97706,stroke-width:2px
+    style TIER3 fill:#f0fdf4,stroke:#16a34a,stroke-width:2px
+    style MASTERS fill:#faf5ff,stroke:#7c3aed,stroke-width:2px
+    style ENGINE fill:#eff6ff,stroke:#2563eb,stroke-width:3px
+    style FUSE fill:#fdf2f8,stroke:#db2777,stroke-width:2px
+    style OUTPUT fill:#ecfeff,stroke:#0891b2,stroke-width:2px
+    style CAP fill:#fff1f2,stroke:#e11d48,stroke-width:2px
+    style TOWER fill:#f8fafc,stroke:#64748b,stroke-width:2px
 ```
 
 ## 与现有开源项目的关系
@@ -130,6 +172,28 @@ flowchart TB
 | 回测实验室 | [engine/backtest_v8_atr_fast.py](engine/backtest_v8_atr_fast.py) 等 | 全A股10年向量化回测(0.6分钟)+门禁对比+ATR定仓+纸交 |
 
 ## 生产/实验室两阶段工作流
+
+```mermaid
+graph LR
+    subgraph WEEKDAY["📅 工作日 · 快速日报"]
+        direction TB
+        D1["✅ 数据新鲜度门禁"] --> D2["🏛 宏观体制裁决"]
+        D2 --> D3["📊 量能结构分析"]
+        D3 --> D4["🧠 LLM情境归因<br/>解释引擎"]
+        D4 --> D5["⚖ 8维×15子模型<br/>独立盲评打分"]
+        D5 --> D6["📋 日报生成<br/>（含纠错线）"]
+    end
+
+    subgraph WEEKEND["🔬 周末 · 磨刀审计"]
+        direction TB
+        W1["全A股10年向量化回测<br/>（0.6分钟跑完）"] --> W2["门禁对比<br/>MA200 vs 市场宽度"]
+        W2 --> W3["战法聚合器审计<br/>25条→存活→淘汰"]
+        W3 --> W4["贝叶斯熔断状态<br/>周度重置"]
+    end
+
+    WEEKDAY -.->|"周末反馈"| WEEKEND
+    WEEKEND -.->|"磨刀结果校准<br/>下周生产参数"| WEEKDAY
+```
 
 ```
 工作日: python tianyan.py full        → V8生产日报（30秒，读周末校准缓存）
