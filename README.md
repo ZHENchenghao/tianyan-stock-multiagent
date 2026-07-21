@@ -65,53 +65,29 @@ flowchart LR
 ## 架构总览
 
 ```mermaid
-graph TB
-    subgraph TIER1["第一统治层  ·  宏观体制与流动性  ·  权重 25%"]
-        direction LR
-        M1["WTI 双维框架"]:::n --- M2["美10Y 利率"]:::n --- M3["CNH 汇率"]:::n --- M4["北向资金"]:::n
-    end
+graph LR
+    A["第一层<br/>宏观体制 · 25%<br/>WTI 美10Y CNH 北向"] --> E
+    B["第二层<br/>量能结构 · 35%<br/>O'Neil 资金指纹 Regime"] --> E
+    C["第三层<br/>催化反共识 · 30%<br/>景气度 蒂尔滤网 剪刀差"] --> E
+    D["独立投票层<br/>17 大师子模型 · 权重均等<br/>Livermore · O'Neil · Minervini · Wyckoff ..."] --> E
 
-    subgraph TIER2["第二传导层  ·  量能与结构  ·  权重 20%+15%"]
-        direction LR
-        T2A["大盘状态 · O'Neil"]:::n --- T2B["资金流五维指纹"]:::n --- T2C["Market Regime 四象限"]:::n
-    end
+    E{"统一裁决引擎<br/>z-score → Φ加权 → 后验概率<br/>+ 迟滞环防抖"}
 
-    subgraph TIER3["第三执行层  ·  催化与反共识  ·  权重 15%+10%+5%"]
-        direction LR
-        T3A["景气度四层引擎"]:::n --- T3B["反共识剪刀差"]:::n --- T3C["蒂尔滤网 · 垄断识别"]:::n
-    end
+    E --> F{"认知熔断<br/>连续错误 ?"}
+    F -->|正常| G["裁决输出<br/>方向 + 点位 + 概率 + 纠错线"]
+    F -->|熔断| H["仓位上限压至 20%<br/>自我怀疑自动降权"]
+    G --> I["五层验证塔<br/>L0→L1→L2→L3→L4"]
+    I -.反馈校准.-> E
 
-    subgraph MASTERS["大师策略子模型  ×15  ·  独立投票权"]
-        direction LR
-        S["Livermore · O'Neil · Minervini · Wyckoff · Druckenmiller<br/>Loeb · Darvas · 养家 · 北京炒手 · 退学 · 小鳄鱼 · 赵老哥"]:::n
-    end
-
-    TIER1 --> ENGINE
-    TIER2 --> ENGINE
-    TIER3 --> ENGINE
-    MASTERS --> ENGINE
-
-    ENGINE{{"统一裁决引擎<br/>z-score → Φ 加权求和<br/>→ 后验概率 P bull / neutral / bear<br/>+ 信息熵 + 迟滞环防抖"}}:::core
-
-    ENGINE --> FUSE{"贝叶斯认知熔断<br/>连续错误 ？"}:::fuse
-    FUSE -->|"正常"| OUTPUT
-    FUSE -->|"熔断"| CAP["仓位上限压至 20%<br/>系统自我怀疑 = 自动降权"]:::cap
-
-    OUTPUT["裁决输出<br/>方向 · 点位 · 概率分布<br/>+ 纠错线（失效条件）"]:::out
-    OUTPUT --> TOWER["五层验证塔<br/>L0 规则审计 → L1 回测 → L2 冲突<br/>→ L3 盲区 → L4 生命周期"]:::tower
-    TOWER -.->|"反馈校准"| ENGINE
-
-    classDef n fill:#1e293b,stroke:#475569,color:#e2e8f0,stroke-width:1px
-    classDef core fill:#0f172a,stroke:#3b82f6,color:#bfdbfe,stroke-width:3px
-    classDef fuse fill:#1e1b4b,stroke:#a855f7,color:#e0e7ff,stroke-width:2px
-    classDef cap fill:#4c0519,stroke:#e11d48,color:#fecdd3,stroke-width:2px
-    classDef out fill:#0f172a,stroke:#22d3ee,color:#cffafe,stroke-width:3px
-    classDef tower fill:#1e293b,stroke:#94a3b8,color:#cbd5e1,stroke-width:2px
-
-    style TIER1 fill:#450a0a,stroke:#dc2626,color:#fecaca,stroke-width:2px
-    style TIER2 fill:#451a03,stroke:#f59e0b,color:#fef3c7,stroke-width:2px
-    style TIER3 fill:#052e16,stroke:#16a34a,color:#dcfce7,stroke-width:2px
-    style MASTERS fill:#2e1065,stroke:#7c3aed,color:#e9d5ff,stroke-width:2px
+    style A fill:#450a0a,stroke:#dc2626,color:#fca5a5
+    style B fill:#451a03,stroke:#f59e0b,color:#fcd34d
+    style C fill:#052e16,stroke:#16a34a,color:#86efac
+    style D fill:#2e1065,stroke:#7c3aed,color:#c4b5fd
+    style E fill:#0f172a,stroke:#3b82f6,color:#93c5fd
+    style F fill:#1e1b4b,stroke:#a855f7,color:#c4b5fd
+    style G fill:#0f172a,stroke:#22d3ee,color:#67e8f9
+    style H fill:#4c0519,stroke:#e11d48,color:#fda4af
+    style I fill:#1e293b,stroke:#94a3b8,color:#cbd5e1
 ```
 
 ## 系统架构全景
