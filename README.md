@@ -8,34 +8,23 @@
 
 ```mermaid
 flowchart LR
-    subgraph INPUT["📥 原始信息"]
-        A[行情 · 资金流 · 新闻 · 公告]
-    end
-    subgraph GATE["① 🔍 数据真伪过滤<br/>入口把关"]
-        B["信源追踪<br/>可信度标注<br/>旧闻重炒识别<br/>垃圾消息拦截"]
-    end
-    subgraph LLM["② 🧠 LLM情境阅读<br/>解释引擎（非预测引擎）"]
-        C["多维信息拼凑市场真实走向<br/>放量阴线→洗盘？出货砸盘？<br/>同一消息,恐慌盘与亢奋盘含义相反<br/>解释「正在发生什么」"]
-    end
-    subgraph JUDGE["③ ⚖️ 多维度独立打分<br/>裁决层"]
-        D["8维矩阵<br/>+<br/>15个大师子模型<br/>互不通气,隔离盲评"]
-    end
-    subgraph OUT["④ 📋 可追责输出"]
-        E["方向 · 点位 · 概率分布<br/>+<br/>纠错线（失效条件）"]
-    end
+    RAW["行情 · 资金流<br/>新闻 · 公告"]:::raw
 
-    A --> B --> C --> D --> E
+    STEP1["① 数据真伪过滤<br/>信源追踪 · 旧闻识别<br/>垃圾拦截"]:::gate
 
-    style INPUT fill:#e8f0fe,stroke:#2563eb,stroke-width:2px
-    style GATE fill:#fff7ed,stroke:#ea580c,stroke-width:2px
-    style LLM fill:#f0fdf4,stroke:#16a34a,stroke-width:2px
-    style JUDGE fill:#faf5ff,stroke:#9333ea,stroke-width:2px
-    style OUT fill:#eff6ff,stroke:#1d4ed8,stroke-width:2px
-    style A fill:#dbeafe,stroke:#3b82f6
-    style B fill:#ffedd5,stroke:#f97316
-    style C fill:#dcfce7,stroke:#22c55e
-    style D fill:#f3e8ff,stroke:#a855f7
-    style E fill:#bfdbfe,stroke:#2563eb
+    STEP2["② LLM 情境阅读<br/>拼凑市场真实走向<br/>洗盘 还是 出货？"]:::llm
+
+    STEP3["③ 多维独立打分<br/>8 维度 + 15 大师模型<br/>互不通气 隔离盲评"]:::judge
+
+    STEP4["④ 可追责输出<br/>方向 · 点位 · 概率<br/>纠错线（失效条件）"]:::out
+
+    RAW ==> STEP1 ==> STEP2 ==> STEP3 ==> STEP4
+
+    classDef raw fill:#f8fafc,stroke:#64748b,color:#334155,stroke-width:2px
+    classDef gate fill:#fff1f2,stroke:#e11d48,color:#9f1239,stroke-width:2px
+    classDef llm fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:2px
+    classDef judge fill:#eef2ff,stroke:#4f46e5,color:#3730a3,stroke-width:2px
+    classDef out fill:#f8fafc,stroke:#0f172a,color:#0f172a,stroke-width:3px
 ```
 
 ## 为什么这样设计
