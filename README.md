@@ -93,6 +93,78 @@ graph TB
     style MASTERS fill:#2e1065,stroke:#7c3aed,color:#e9d5ff,stroke-width:2px
 ```
 
+## 系统架构全景
+
+天眼 V8 是一个完整的多 Agent 裁决系统，当前代码规模约 **22,000 行 Python**，由四条主线构成：
+
+### 一、信息精炼管道（生产主线）
+
+从原始数据到可追责建议的四道工序：
+
+| 工序 | 模块 | 行数 | 职责 |
+|------|------|------|------|
+| **① 数据过滤** | `data_guard.py` `data_availability.py` `data_fallback.py` `rss_collector.py` `news_collector.py` | ~2,400 | 多源降级采集 + 新鲜度门禁 + 信源追踪 + 旧闻重炒识别 |
+| **② 情境归因** | `context_reader.py` `national_team_backstop.py` `news_hub.py` `event_calendar.py` | ~3,000 | LLM 解释引擎：多假设竞争 + 可证伪 + 编造钓鱼校验；国家队护盘动态判别；消息能量模型 |
+| **③ 多维打分** | `unified_verdict.py` `verdict_math.py` `market_regime.py` `capital_flow_fingerprint.py` + 17 个子模型 | ~10,000 | 8 维 + 15 大师独立盲评，z-score → Φ 加权 → 贝叶斯后验 → 迟滞环 |
+| **④ 可追责输出** | `unified_verdict.py` `report_orchestrator.py` `fuse_breaker.py` | ~5,000 | 日报生成 + 纠错线强制 + 卖出五重熔断 + 贝叶斯认知熔断 |
+
+### 二、8 维度交叉验证矩阵
+
+每个维度独立打分，仅在裁决层合成（权重来源：V8 架构设计决策）：
+
+| # | 维度 | 核心模块 | 权重 | 关键机制 |
+|---|------|---------|------|---------|
+| 1 | **宏观体制** | `market_regime.py` `cross_market_conduction.py` `national_team_backstop.py` | 25% | WTI 双维框架（绝对价格+涨速）、美10Y+CNH 传导矩阵、国家队护盘 LLM 判别 |
+| 2 | **大盘状态** | `market_regime.py` `constitution.py` | 20% | O'Neil 市场阶段 + Market Regime 四象限（广度+轮动烈度） |
+| 3 | **景气度** | `anti_consensus_prosperity.py` | 15% | 四层引擎选股 + 反共识剪刀差（带 RSI 门禁防陷阱） |
+| 4 | **资金流** | `capital_flow_fingerprint.py` | 15% | 五维指纹（北向/主力/散户/融资/大单方向+强度+持续性） |
+| 5 | **盈亏** | `unified_verdict.py` 内置 | 10% | 持仓实时盈亏纳入风险偏好修正 |
+| 6 | **压力测试** | `scenario_engine.py` `black_swan.py` `risk_controller.py` | 10% | 5 情景推演（基线/衰退/危机/黑天鹅/政策冲击） |
+| 7 | **反共识** | `thiel_filter.py` | 10% | 蒂尔四问滤网——垄断→秘密→时机→致命 Bug |
+| 8 | **规则健康** | `rule_failure_early_warning.py` `rule_audit.py` | 5% | CuSum + 滚动窗口；规则失效预警；矛盾/重叠/盲区三检 |
+
+### 三、大师策略子模型 ×17
+
+独立投票器——规则化实现，非 LLM 人设扮演（可回测、可审计）：
+
+> **国际派**：Livermore（关键点反转）· O'Neil（CAN SLIM 状态机）· Minervini（趋势模板）· Wyckoff（吸筹派发区）· Druckenmiller（宏观先行）· Loeb（成交量确认）· Darvas（箱体突破）
+>
+> **A 股派**：养家（情绪周期）· 北京炒手（地量窒息底）· 退学（超短打板）· 小鳄鱼（龙头接力）· 徐翔（涨停板战法）· 赵老哥（游资跟随）· 乔帮主（低吸）· 逻辑哥（事件驱动）
+
+### 四、风控与验证层
+
+| 层级 | 模块 | 机制 |
+|------|------|------|
+| **贝叶斯认知熔断** | `unified_verdict.py` 内置 | 连续错误 → 后验崩塌至 50% → 仓位上限自动压至 20% |
+| **卖出五重熔断** | `fuse_breaker.py` | 超卖 / 传导 / 偏离 / 地缘 / 伪催化——3 项不过 = 禁止卖出 |
+| **五层验证塔** | `verification_tower.py` `conflict_resolver.py` `strategy_lifecycle.py` | L0 规则审计 → L1 回测 → L2 冲突 → L3 盲区 → L4 生命周期 |
+| **诚实回测** | `backtest_v8.py` `backtest_gate.py` `backtest_monitor.py` | 涨跌停剥除 + 真实换手成本 + only-long 重估 + Purged CV |
+| **纸交引擎** | `paper_trade.py` `portfolio_referee.py` | 先卖后买双向执行；真实费率滑点；Perold 实施差额基准 |
+
+### 五、生产 / 实验物理隔离
+
+生产与实验室**代码隔离、状态不共享**——未通过全链路验证的策略不允许接入生产投票：
+
+```
+生产系统：tianyan.py full → 日报 30 秒                        实验室（lab/ 100+ 脚本）：
+  ├─ 8 维裁决                                          ├─ attack_engine v2-v11（进攻引擎）
+  ├─ 自动日报管道（cron 无人值守）                        ├─ Holmes v1-v9（侦探系列）
+  └─ 实时风控                                           ├─ 噪音研究（noise_topology / noise_thermometer）
+                                                       ├─ 微观结构（microstructure / orderflow）
+                                                       ├─ 因子挖掘（alpha101 / cross_section / 非线性审计）
+                                                       └─ 同步指纹（sync_expand / triangle）
+```
+
+### 六、基础设施
+
+| 组件 | 模块 | 说明 |
+|------|------|------|
+| CLI 总入口 | `tianyan.py` | 40+ 子命令（daily / full / recommend / backtest / attack / ...） |
+| 数据底座 | DuckDB `finance.db` | 全 A 股日线 + 分钟线 + 宏观 + 资金流 + 新闻 |
+| MCP 服务 | `mcp_server/` | 对外 API，供 AI Agent 直接调用天眼裁决能力 |
+| 侦探推理 | `detective_engine.py` | 四阶段递归推理 + 自检验闭环（读昨日预测→对比今日→标记漏报） |
+| 跨市场传导 | `cross_market_conduction.py` | 时滞矩阵——原油→有色、美债→成长、CNH→北向 |
+
 ## 与现有开源项目的关系
 
 本项目不是从零发明，而是在调研并**实际使用**主流框架后，取其精华、针对其实测痛点重新设计：
@@ -136,27 +208,23 @@ graph TB
 ### 7. 数据不过夜
 任何市场结论输出前，强制检查本地DuckDB最新K线日期；数据≠今天→先刷新再开口。用过期数据出结论=直接违规拦截。
 
-## 模块地图
+## 核心模块文件索引
 
-| 模块 | 文件 | 说明 |
-|------|------|------|
-| CLI总入口 | [tianyan.py](tianyan.py) | 40+子命令：daily/full/recommend/backtest/... |
-| 统一裁决引擎 | [engine/unified_verdict.py](engine/unified_verdict.py) | 三层金字塔+8维矩阵+连续化概率流 |
-| 概率数学内核 | [engine/verdict_math.py](engine/verdict_math.py) | z-score→Φ加权→后验概率→迟滞环 |
-| 侦探推理引擎 | [detective_engine.py](detective_engine.py) | 四阶段递归推理+自检验闭环（读昨日预测→对比今日→标记漏报） |
-| 日报调度器 | [engine/report_orchestrator.py](engine/report_orchestrator.py) | 39模块编排→Markdown日报 |
-| 贝叶斯熔断 | [engine/fuse_breaker.py](engine/fuse_breaker.py) | 卖出五重校验+分级熔断 |
-| 大师子模型 | [engine/sub_models/](engine/sub_models/) | Livermore/O'Neil/Minervini/Wyckoff等15个独立投票器 |
-| 蒂尔滤网 | [engine/thiel_filter.py](engine/thiel_filter.py) | 彼得·蒂尔四问：垄断→秘密→时机→反共识致命Bug |
-| 压力测试 | [engine/scenario_engine.py](engine/scenario_engine.py) | 5场景情景推演+黑天鹅 |
-| 反共识引擎 | [engine/anti_consensus_prosperity.py](engine/anti_consensus_prosperity.py) | 景气度剪刀差（带RSI+涨幅门禁，防"反共识陷阱"） |
-| 资金流指纹 | [engine/capital_flow_fingerprint.py](engine/capital_flow_fingerprint.py) | 微观结构五维指纹 |
-| 规则健康监控 | [engine/rule_failure_early_warning.py](engine/rule_failure_early_warning.py) | CuSum+滚动窗口，规则失效预警 |
-| 五层验证塔 | [engine/verification_tower.py](engine/verification_tower.py) | L0规则审计→L1回测→L2矛盾→L3盲区→L4生命周期 |
-| LLM情境判别 | [engine/national_team_backstop.py](engine/national_team_backstop.py) | LLM动态辨别国家队护盘（情境整合，非阈值规则） |
-| 回测实验室 | [engine/backtest_v8_atr_fast.py](engine/backtest_v8_atr_fast.py) 等 | 全A股10年向量化回测(0.6分钟)+门禁对比+ATR定仓+纸交 |
+> 完整架构见上方「系统架构全景」。以下为仓库内对应文件。
 
-## 生产/实验室两阶段工作流
+| 层级 | 文件 |
+|------|------|
+| CLI 总入口 | [tianyan.py](tianyan.py) |
+| 统一裁决引擎 | [engine/unified_verdict.py](engine/unified_verdict.py)（2,456 行） |
+| LLM 解释引擎 | [engine/context_reader.py](engine/context_reader.py)（316 行 · 2026-07 新增） |
+| 概率数学内核 | [engine/verdict_math.py](engine/verdict_math.py)（630 行） |
+| 侦探推理引擎 | [detective_engine.py](detective_engine.py)（8,157 行） |
+| 日报调度器 | [engine/report_orchestrator.py](engine/report_orchestrator.py)（1,958 行） |
+| 大师策略子模型 | [engine/sub_models/](engine/sub_models/)（17 个，1,355 行） |
+| 回测实验室 | [engine/backtest_v8.py](engine/backtest_v8.py) · [engine/backtest_gate.py](engine/backtest_gate.py) · [engine/backtest_monitor.py](engine/backtest_monitor.py) |
+| 数据基础设施 | [engine/data_guard.py](engine/data_guard.py) · [engine/data_availability.py](engine/data_availability.py) · [engine/data_fallback.py](engine/data_fallback.py) |
+
+## 生产 / 实验室两阶段工作流
 
 ```mermaid
 graph LR
