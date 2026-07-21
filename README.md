@@ -21,24 +21,11 @@
 核心理念是一条**信息精炼管道**：让AI把海量原始信息变成可信的判断依据，再让多维裁决把判断变成可追责的建议。
 
 ```mermaid
-flowchart LR
-    RAW["行情 · 资金流<br/>新闻 · 公告"]:::raw
-
-    STEP1["① 数据真伪过滤<br/>信源追踪 · 旧闻识别<br/>垃圾拦截"]:::gate
-
-    STEP2["② LLM 情境阅读<br/>拼凑市场真实走向<br/>洗盘 还是 出货？"]:::llm
-
-    STEP3["③ 多维独立打分<br/>8 维度 + 15 大师模型<br/>互不通气 隔离盲评"]:::judge
-
-    STEP4["④ 可追责输出<br/>方向 · 点位 · 概率<br/>纠错线（失效条件）"]:::out
-
-    RAW ==> STEP1 ==> STEP2 ==> STEP3 ==> STEP4
-
-    classDef raw fill:#f8fafc,stroke:#64748b,color:#334155,stroke-width:2px
-    classDef gate fill:#fff1f2,stroke:#e11d48,color:#9f1239,stroke-width:2px
-    classDef llm fill:#ecfdf5,stroke:#059669,color:#065f46,stroke-width:2px
-    classDef judge fill:#eef2ff,stroke:#4f46e5,color:#3730a3,stroke-width:2px
-    classDef out fill:#f8fafc,stroke:#0f172a,color:#0f172a,stroke-width:3px
+graph LR
+    A[行情 · 资金流 · 新闻] --> B[真伪过滤<br/>信源 · 旧闻 · 垃圾拦截]
+    B --> C[LLM 情境阅读<br/>拼凑走向 · 洗盘 or 出货]
+    C --> D[多维独立打分<br/>8 维度 + 15 模型 · 隔离盲评]
+    D --> E[可追责输出<br/>方向 · 点位 · 概率 · 纠错线]
 ```
 
 ## 为什么这样设计
