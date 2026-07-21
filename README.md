@@ -45,30 +45,24 @@ flowchart LR
 
 ```mermaid
 graph TB
-    subgraph TIER1["🏛 第一统治层 · 宏观体制与流动性 （权重25%）"]
+    subgraph TIER1["第一统治层  ·  宏观体制与流动性  ·  权重 25%"]
         direction LR
-        M1["WTI 双维框架"] --- M2["美10Y 利率"]
-        M2 --- M3["CNH 汇率"]
-        M3 --- M4["北向资金"]
+        M1["WTI 双维框架"]:::n --- M2["美10Y 利率"]:::n --- M3["CNH 汇率"]:::n --- M4["北向资金"]:::n
     end
 
-    subgraph TIER2["📊 第二传导层 · 量能与结构 （权重20%+15%）"]
+    subgraph TIER2["第二传导层  ·  量能与结构  ·  权重 20%+15%"]
         direction LR
-        T2A["大盘状态<br/>O'Neil体系"]
-        T2B["资金流五维指纹"]
-        T2C["Market Regime<br/>四象限"]
+        T2A["大盘状态 · O'Neil"]:::n --- T2B["资金流五维指纹"]:::n --- T2C["Market Regime 四象限"]:::n
     end
 
-    subgraph TIER3["📰 第三执行层 · 催化与反共识 （权重15%+10%+5%）"]
+    subgraph TIER3["第三执行层  ·  催化与反共识  ·  权重 15%+10%+5%"]
         direction LR
-        T3A["景气度四层引擎"]
-        T3B["反共识剪刀差<br/>（带RSI门禁）"]
-        T3C["蒂尔滤网<br/>垄断识别"]
+        T3A["景气度四层引擎"]:::n --- T3B["反共识剪刀差"]:::n --- T3C["蒂尔滤网 · 垄断识别"]:::n
     end
 
-    subgraph MASTERS["🎓 大师策略子模型 ×15 （独立投票权）"]
+    subgraph MASTERS["大师策略子模型  ×15  ·  独立投票权"]
         direction LR
-        S["Livermore · O'Neil · Minervini · Wyckoff<br/>Druckenmiller · Loeb · Darvas · 养家<br/>北京炒手 · 退学 · 小鳄鱼 · 徐翔 · 赵老哥"]
+        S["Livermore · O'Neil · Minervini · Wyckoff · Druckenmiller<br/>Loeb · Darvas · 养家 · 北京炒手 · 退学 · 小鳄鱼 · 赵老哥"]:::n
     end
 
     TIER1 --> ENGINE
@@ -76,25 +70,27 @@ graph TB
     TIER3 --> ENGINE
     MASTERS --> ENGINE
 
-    ENGINE{{"⚙ 统一裁决引擎<br/>z-score → Φ 加权求和<br/>→ 后验概率向量 P(🐂,😐,🐻)<br/>→ 信息熵 + 迟滞环防抖"}}
+    ENGINE{{"统一裁决引擎<br/>z-score → Φ 加权求和<br/>→ 后验概率 P bull / neutral / bear<br/>+ 信息熵 + 迟滞环防抖"}}:::core
 
-    ENGINE --> FUSE{"🔥 贝叶斯认知熔断<br/>连续错误？"}
+    ENGINE --> FUSE{"贝叶斯认知熔断<br/>连续错误 ？"}:::fuse
     FUSE -->|"正常"| OUTPUT
-    FUSE -->|"熔断"| CAP["仓位上限压至 20% ↓<br/>系统自我怀疑 = 自动降权"]
+    FUSE -->|"熔断"| CAP["仓位上限压至 20%<br/>系统自我怀疑 = 自动降权"]:::cap
 
-    OUTPUT["📋 裁决输出<br/>方向 + 点位 + 概率分布<br/>+ 纠错线（失效条件）"]
-    OUTPUT --> TOWER["🗼 五层验证塔<br/>L0规则审计 → L1回测 → L2冲突<br/>→ L3盲区 → L4生命周期"]
+    OUTPUT["裁决输出<br/>方向 · 点位 · 概率分布<br/>+ 纠错线（失效条件）"]:::out
+    OUTPUT --> TOWER["五层验证塔<br/>L0 规则审计 → L1 回测 → L2 冲突<br/>→ L3 盲区 → L4 生命周期"]:::tower
     TOWER -.->|"反馈校准"| ENGINE
 
-    style TIER1 fill:#fef2f2,stroke:#dc2626,stroke-width:2px
-    style TIER2 fill:#fffbeb,stroke:#d97706,stroke-width:2px
-    style TIER3 fill:#f0fdf4,stroke:#16a34a,stroke-width:2px
-    style MASTERS fill:#faf5ff,stroke:#7c3aed,stroke-width:2px
-    style ENGINE fill:#eff6ff,stroke:#2563eb,stroke-width:3px
-    style FUSE fill:#fdf2f8,stroke:#db2777,stroke-width:2px
-    style OUTPUT fill:#ecfeff,stroke:#0891b2,stroke-width:2px
-    style CAP fill:#fff1f2,stroke:#e11d48,stroke-width:2px
-    style TOWER fill:#f8fafc,stroke:#64748b,stroke-width:2px
+    classDef n fill:#1e293b,stroke:#475569,color:#e2e8f0,stroke-width:1px
+    classDef core fill:#0f172a,stroke:#3b82f6,color:#bfdbfe,stroke-width:3px
+    classDef fuse fill:#1e1b4b,stroke:#a855f7,color:#e0e7ff,stroke-width:2px
+    classDef cap fill:#4c0519,stroke:#e11d48,color:#fecdd3,stroke-width:2px
+    classDef out fill:#0f172a,stroke:#22d3ee,color:#cffafe,stroke-width:3px
+    classDef tower fill:#1e293b,stroke:#94a3b8,color:#cbd5e1,stroke-width:2px
+
+    style TIER1 fill:#450a0a,stroke:#dc2626,color:#fecaca,stroke-width:2px
+    style TIER2 fill:#451a03,stroke:#f59e0b,color:#fef3c7,stroke-width:2px
+    style TIER3 fill:#052e16,stroke:#16a34a,color:#dcfce7,stroke-width:2px
+    style MASTERS fill:#2e1065,stroke:#7c3aed,color:#e9d5ff,stroke-width:2px
 ```
 
 ## 与现有开源项目的关系
@@ -164,24 +160,30 @@ graph TB
 
 ```mermaid
 graph LR
-    subgraph WEEKDAY["📅 工作日 · 快速日报"]
+    subgraph WEEKDAY["工作日 · 快速日报 · 约 30 秒"]
         direction TB
-        D1["✅ 数据新鲜度门禁"] --> D2["🏛 宏观体制裁决"]
-        D2 --> D3["📊 量能结构分析"]
-        D3 --> D4["🧠 LLM情境归因<br/>解释引擎"]
-        D4 --> D5["⚖ 8维×15子模型<br/>独立盲评打分"]
-        D5 --> D6["📋 日报生成<br/>（含纠错线）"]
+        D1["数据新鲜度门禁"]:::w --> D2["宏观体制裁决"]:::w
+        D2 --> D3["量能结构分析"]:::w
+        D3 --> D4["LLM 情境归因 · 解释引擎"]:::w
+        D4 --> D5["8维 × 15子模型 独立盲评"]:::w
+        D5 --> D6["日报生成 · 含纠错线"]:::w
     end
 
-    subgraph WEEKEND["🔬 周末 · 磨刀审计"]
+    subgraph WEEKEND["周末 · 磨刀审计"]
         direction TB
-        W1["全A股10年向量化回测<br/>（0.6分钟跑完）"] --> W2["门禁对比<br/>MA200 vs 市场宽度"]
-        W2 --> W3["战法聚合器审计<br/>25条→存活→淘汰"]
-        W3 --> W4["贝叶斯熔断状态<br/>周度重置"]
+        W1["全A股10年向量化回测<br/>0.6 分钟跑完"]:::v --> W2["门禁对比<br/>MA200 vs 市场宽度"]:::v
+        W2 --> W3["战法聚合器审计<br/>25条 → 存活 → 淘汰"]:::v
+        W3 --> W4["贝叶斯熔断状态 周度重置"]:::v
     end
 
     WEEKDAY -.->|"周末反馈"| WEEKEND
-    WEEKEND -.->|"磨刀结果校准<br/>下周生产参数"| WEEKDAY
+    WEEKEND -.->|"校准下周参数"| WEEKDAY
+
+    classDef w fill:#0f172a,stroke:#3b82f6,color:#bfdbfe,stroke-width:2px
+    classDef v fill:#2e1065,stroke:#7c3aed,color:#e9d5ff,stroke-width:2px
+
+    style WEEKDAY fill:#0a1628,stroke:#3b82f6,color:#bfdbfe,stroke-width:2px
+    style WEEKEND fill:#1a0d3e,stroke:#7c3aed,color:#e9d5ff,stroke-width:2px
 ```
 
 ```
